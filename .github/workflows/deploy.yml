@@ -5,4 +5,4 @@ jobs:
   placeholder:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "Deploy placeholder: OIDC deployment is added in the CI/CD phase"
+      - run: echo "Deploy placeholder - OIDC deployment is added in the CI/CD phase"
