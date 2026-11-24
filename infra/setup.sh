@@ -56,3 +56,14 @@ FUNC=func-$EQ
 az functionapp create -n $FUNC -g $RG --storage-account $ST --app-insights $AI \
   --flexconsumption-location $LOC --runtime python --runtime-version 3.12 \
   --instance-memory 512 --tags projet=dscc equipe=$EQ
+
+# Identity-based connections: role assignments made ONCE by the subscription owner
+az functionapp identity assign -n $FUNC -g $RG
+PID=$(az functionapp identity show -n $FUNC -g $RG --query principalId -o tsv)
+ST_ID=$(az storage account show -n $ST -g $RG --query id -o tsv)
+for r in "Storage Blob Data Owner" "Storage Queue Data Contributor"; do
+  az role assignment create --role "$r" --assignee-object-id $PID \
+    --assignee-principal-type ServicePrincipal --scope $ST_ID; done
+# Cosmos DB data plane (Built-in Data Contributor): not an Azure RBAC role
+az cosmosdb sql role assignment create -a $COSMOS -g $RG --scope "/" \
+  --principal-id $PID --role-definition-id 00000000-0000-0000-0000-000000000002
