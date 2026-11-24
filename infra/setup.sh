@@ -40,3 +40,13 @@ az storage account blob-service-properties update --account-name $ST -g $RG --en
 for c in input output rejected models; do az storage container create --account-name $ST -n $c; done
 az storage queue create --account-name $ST -n inference-requests
 az storage blob service-properties update --account-name $ST --static-website --index-document index.html
+
+# Container Apps: ONE environment, logs to the capped workspace; placeholder image until the API is built
+ENV=cae-$EQ
+az containerapp env create -n $ENV -g $RG -l $LOC \
+  --logs-workspace-id $(az monitor log-analytics workspace show -g $RG -n $LAW --query customerId -o tsv) \
+  --logs-workspace-key $(az monitor log-analytics workspace get-shared-keys -g $RG -n $LAW --query primarySharedKey -o tsv) \
+  --tags projet=dscc equipe=$EQ
+az containerapp create -n api-$EQ -g $RG --environment $ENV \
+  --image mcr.microsoft.com/k8se/quickstart:latest --target-port 80 --ingress external \
+  --cpu 0.25 --memory 0.5Gi --min-replicas 0 --max-replicas 2 --tags projet=dscc equipe=$EQ
