@@ -25,3 +25,9 @@ az cosmosdb sql container create -a $COSMOS -g $RG -d pipeline -n inferences \
   --partition-key-path "/fileName"
 
 # Budget ($25, alerts at 20/50/80%) was created in the portal: Cost Management > Budgets
+
+# Monitoring FIRST: workspace capped at 0.2 GB/day + workspace-based App Insights, both in the RG
+LAW=log-$EQ; AI=appi-$EQ
+az monitor log-analytics workspace create -g $RG -n $LAW -l $LOC --quota 0.2 --tags projet=dscc equipe=$EQ
+LAW_ID=$(az monitor log-analytics workspace show -g $RG -n $LAW --query id -o tsv)
+az monitor app-insights component create --app $AI -g $RG -l $LOC --workspace $LAW_ID --tags projet=dscc equipe=$EQ
