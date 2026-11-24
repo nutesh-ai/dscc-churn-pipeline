@@ -67,3 +67,14 @@ for r in "Storage Blob Data Owner" "Storage Queue Data Contributor"; do
 # Cosmos DB data plane (Built-in Data Contributor): not an Azure RBAC role
 az cosmosdb sql role assignment create -a $COSMOS -g $RG --scope "/" \
   --principal-id $PID --role-definition-id 00000000-0000-0000-0000-000000000002
+
+# Managed identity for GitHub Actions (OIDC): no Entra ID rights needed, Contributor on the RG only
+ID=id-github-$EQ
+az identity create -n $ID -g $RG -l $LOC --tags projet=dscc equipe=$EQ
+az identity federated-credential create -n github-production --identity-name $ID -g $RG \
+  --issuer https://token.actions.githubusercontent.com \
+  --subject repo:nutesh-ai/dscc-churn-pipeline:environment:production \
+  --audiences api://AzureADTokenExchange
+az role assignment create --role Contributor \
+  --assignee-object-id $(az identity show -n $ID -g $RG --query principalId -o tsv) \
+  --assignee-principal-type ServicePrincipal --scope $(az group show -n $RG --query id -o tsv)
