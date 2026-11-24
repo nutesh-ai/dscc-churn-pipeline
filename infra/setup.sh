@@ -50,3 +50,9 @@ az containerapp env create -n $ENV -g $RG -l $LOC \
 az containerapp create -n api-$EQ -g $RG --environment $ENV \
   --image mcr.microsoft.com/k8se/quickstart:latest --target-port 80 --ingress external \
   --cpu 0.25 --memory 0.5Gi --min-replicas 0 --max-replicas 2 --tags projet=dscc equipe=$EQ
+
+# Flex Consumption Function App (Python 3.12, 512 MB)
+FUNC=func-$EQ
+az functionapp create -n $FUNC -g $RG --storage-account $ST --app-insights $AI \
+  --flexconsumption-location $LOC --runtime python --runtime-version 3.12 \
+  --instance-memory 512 --tags projet=dscc equipe=$EQ
