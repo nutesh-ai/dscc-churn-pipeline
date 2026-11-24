@@ -1,0 +1,10 @@
+name: CI
+on:
+  push:
+  pull_request:
+jobs:
+  placeholder:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "CI placeholder: lint, tests and image build are added in the CI/CD phase"
