@@ -31,3 +31,12 @@ LAW=log-$EQ; AI=appi-$EQ
 az monitor log-analytics workspace create -g $RG -n $LAW -l $LOC --quota 0.2 --tags projet=dscc equipe=$EQ
 LAW_ID=$(az monitor log-analytics workspace show -g $RG -n $LAW --query id -o tsv)
 az monitor app-insights component create --app $AI -g $RG -l $LOC --workspace $LAW_ID --tags projet=dscc equipe=$EQ
+
+# Storage: containers, queue, static website, versioning
+ST=st${EQ}pipe
+az storage account create -n $ST -g $RG -l $LOC --sku Standard_LRS --kind StorageV2 \
+  --min-tls-version TLS1_2 --allow-blob-public-access false --tags projet=dscc equipe=$EQ
+az storage account blob-service-properties update --account-name $ST -g $RG --enable-versioning true
+for c in input output rejected models; do az storage container create --account-name $ST -n $c; done
+az storage queue create --account-name $ST -n inference-requests
+az storage blob service-properties update --account-name $ST --static-website --index-document index.html
