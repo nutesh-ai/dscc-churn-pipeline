@@ -221,3 +221,12 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Project-specific: never commit secrets or emulator state
+local.settings.json
+.env
+*.pem
+__azurite_db_*
+__blobstorage__
+__queuestorage__
+data/*.csv
