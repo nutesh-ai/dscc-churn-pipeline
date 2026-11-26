@@ -1,0 +1,21 @@
+{
+  "model_version": "1.0.0",
+  "seed": 42,
+  "train_rows": 5634,
+  "test_rows": 1409,
+  "test_churn_rate": 0.2654,
+  "baseline_majority_class": {
+    "auc": 0.5,
+    "f1": 0.0,
+    "precision": 0.0,
+    "recall": 0.0
+  },
+  "logistic_regression": {
+    "auc": 0.8419,
+    "f1": 0.604,
+    "precision": 0.6572,
+    "recall": 0.5588
+  },
+  "median_inference_ms": 17.6,
+  "artifact_size_mb": 0.008
+}
