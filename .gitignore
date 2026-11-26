@@ -232,3 +232,4 @@ __queuestorage__
 data/*.csv
 .azurite/
 .venv/
+.local/
