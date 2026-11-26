@@ -1,0 +1,11 @@
+.venv
+.git
+.github
+data
+docs
+infra
+functions
+web
+**/__pycache__
+**/.pytest_cache
+.azurite

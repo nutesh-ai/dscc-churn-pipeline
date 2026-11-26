@@ -3,7 +3,6 @@ import os
 import threading
 import time
 from contextlib import asynccontextmanager
-from typing import Optional
 
 import joblib
 import pandas as pd
@@ -54,7 +53,7 @@ class Customer(BaseModel):
     PaperlessBilling: str = Field(min_length=1)
     PaymentMethod: str = Field(min_length=1)
     MonthlyCharges: float = Field(ge=0)
-    TotalCharges: Optional[float] = Field(default=None, ge=0)
+    TotalCharges: float | None = Field(default=None, ge=0)
 
 
 class Prediction(BaseModel):
