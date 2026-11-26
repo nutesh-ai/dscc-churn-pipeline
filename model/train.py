@@ -105,8 +105,8 @@ def main():
     report = {
         "model_version": MODEL_VERSION,
         "seed": SEED,
-        "train_rows": int(len(X_train)),
-        "test_rows": int(len(X_test)),
+        "train_rows": len(X_train),
+        "test_rows": len(X_test),
         "test_churn_rate": round(float(y_test.mean()), 4),
         "baseline_majority_class": base_metrics,
         "logistic_regression": metrics,
