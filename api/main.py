@@ -7,9 +7,10 @@ from contextlib import asynccontextmanager
 import joblib
 import pandas as pd
 from fastapi import FastAPI
+from opentelemetry import metrics
 from pydantic import BaseModel, Field
 
-API_VERSION = "1.0.0"
+API_VERSION = "1.1.0"
 MODEL_PATH = os.getenv("MODEL_PATH", "model-1.0.0.joblib")
 
 # Azure Monitor telemetry: only when a connection string is configured
@@ -17,6 +18,14 @@ if os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING"):
     from azure.monitor.opentelemetry import configure_azure_monitor
 
     configure_azure_monitor()
+
+# Custom metrics (no-ops when telemetry is not configured, e.g. in tests)
+meter = metrics.get_meter("churn-api")
+inference_counter = meter.create_counter("inference_count", description="Predictions served")
+error_counter = meter.create_counter("inference_errors", description="Failed predictions")
+latency_ms = meter.create_histogram(
+    "model_latency_ms", unit="ms", description="Model inference latency"
+)
 
 state = {"bundle": None, "load_seconds": None}
 stats = {"calls": 0, "errors": 0, "total_ms": 0.0}
@@ -85,11 +94,14 @@ def predict(customer: Customer):
     except Exception:
         with lock:
             stats["errors"] += 1
+        error_counter.add(1)
         raise
     ms = (time.perf_counter() - t0) * 1000
     with lock:
         stats["calls"] += 1
         stats["total_ms"] += ms
+    inference_counter.add(1, {"model_version": b["model_version"]})
+    latency_ms.record(ms, {"model_version": b["model_version"]})
     return Prediction(
         churn=proba >= 0.5,
         probability=round(proba, 4),
@@ -99,7 +111,7 @@ def predict(customer: Customer):
 
 
 @app.get("/metrics")
-def metrics():
+def metrics_endpoint():
     with lock:
         calls = stats["calls"]
         avg = stats["total_ms"] / calls if calls else 0.0
