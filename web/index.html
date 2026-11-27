@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Churn pipeline dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 2rem auto; max-width: 960px; padding: 0 1rem; color: #1a1a1a; }
+  h1 { font-size: 1.4rem; }
+  .meta { color: #666; font-size: .85rem; margin-bottom: 1rem; }
+  .row { display: flex; gap: 2rem; flex-wrap: wrap; align-items: flex-start; }
+  .chart { width: 260px; }
+  table { border-collapse: collapse; flex: 1; min-width: 480px; }
+  th, td { text-align: left; padding: .4rem .6rem; border-bottom: 1px solid #ddd; font-size: .9rem; }
+  .churn { color: #b00020; font-weight: 600; }
+  #status { color: #b00020; }
+</style>
+</head>
+<body>
+<h1>Churn predictions: last 20 inferences</h1>
+<div class="meta">Refreshes every 30 s. Last update: <span id="updated">never</span> <span id="status"></span></div>
+<div class="row">
+  <div class="chart"><canvas id="chart"></canvas></div>
+  <table>
+    <thead><tr><th>Time (UTC)</th><th>File</th><th>Prediction</th><th>Confidence</th><th>Model</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+</div>
+<script>
+const API = "https://func-nutesh.azurewebsites.net/api/recent";
+let chart;
+
+function render(items) {
+  const body = document.getElementById("rows");
+  body.replaceChildren();
+  let churn = 0;
+  for (const it of items) {
+    const tr = document.createElement("tr");
+    const cells = [
+      it.timestamp.replace("T", " ").slice(0, 19),
+      it.fileName,
+      it.prediction,
+      (it.confidence * 100).toFixed(1) + " %",
+      it.modelVersion,
+    ];
+    cells.forEach((text, i) => {
+      const td = document.createElement("td");
+      td.textContent = text;            // textContent: file names are user-supplied
+      if (i === 2 && it.prediction === "churn") td.className = "churn";
+      tr.appendChild(td);
+    });
+    body.appendChild(tr);
+    if (it.prediction === "churn") churn++;
+  }
+  const data = [churn, items.length - churn];
+  if (!chart) {
+    chart = new Chart(document.getElementById("chart"), {
+      type: "doughnut",
+      data: { labels: ["churn", "no churn"], datasets: [{ data, backgroundColor: ["#b00020", "#2e7d32"] }] },
+      options: { plugins: { legend: { position: "bottom" } } },
+    });
+  } else {
+    chart.data.datasets[0].data = data;
+    chart.update();
+  }
+}
+
+async function refresh() {
+  const status = document.getElementById("status");
+  try {
+    const r = await fetch(API, { cache: "no-store" });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    render(await r.json());
+    document.getElementById("updated").textContent = new Date().toLocaleTimeString();
+    status.textContent = "";
+  } catch (e) {
+    status.textContent = "(error: " + e.message + ")";
+  }
+}
+refresh();
+setInterval(refresh, 30000);
+</script>
+</body>
+</html>
