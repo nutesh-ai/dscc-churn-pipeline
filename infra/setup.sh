@@ -100,3 +100,16 @@ az identity federated-credential create -n github-production --identity-name $ID
 az role assignment create --role Contributor \
   --assignee-object-id $(az identity show -n $ID -g $RG --query principalId -o tsv) \
   --assignee-principal-type ServicePrincipal --scope $(az group show -n $RG --query id -o tsv)
+
+# Function App settings: identity-based storage, no keys (AzureWebJobsStorage connection string removed)
+az functionapp config appsettings set -n $FUNC -g $RG --settings \
+  STORAGE_ACCOUNT=$ST COSMOS_ENDPOINT=<cosmos endpoint> API_URL=<api url> MAX_FILE_BYTES=20000 \
+  AzureWebJobsStorage__accountName=$ST
+az functionapp config appsettings delete -n $FUNC -g $RG --setting-names AzureWebJobsStorage
+# Code deployment
+(cd functions && func azure functionapp publish $FUNC --python)
+# Event Grid subscription (after the dispatcher exists): BlobCreated on input/ only
+az eventgrid event-subscription create -n blob-to-dispatcher --source-resource-id "$ST_ID" \
+  --endpoint-type azurefunction --endpoint "$(az functionapp function show -n $FUNC -g $RG --function-name dispatcher --query id -o tsv)" \
+  --included-event-types Microsoft.Storage.BlobCreated \
+  --subject-begins-with /blobServices/default/containers/input/
